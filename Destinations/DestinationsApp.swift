@@ -2,7 +2,7 @@
 //  DestinationsApp.swift
 //  Destinations
 //
-//  Created by Tan, Weiting on 10/14/26.
+//  Created by Tan, Weiting on 10/19/26.
 //
 import SwiftUI
 
@@ -11,24 +11,25 @@ struct DestinationsApp: App {
     let destinations = Destinations()
     let visitedStore = VisitedStore()
 
-    // Saved on the device, so the welcome screen only appears on the first launch
-    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    // Starts as true on every launch of the app, so the welcome screen
+    // shows each time the app is opened fresh (not when it returns from the background).
+    @State private var showWelcome = true
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if hasSeenWelcome {
+                if showWelcome {
+                    WelcomeView {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            showWelcome = false
+                        }
+                    }
+                    .transition(.opacity)
+                } else {
                     HomeView()
                         .environment(destinations)
                         .environment(visitedStore)
                         .transition(.opacity)
-                } else {
-                    WelcomeView {
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            hasSeenWelcome = true
-                        }
-                    }
-                    .transition(.opacity)
                 }
             }
         }

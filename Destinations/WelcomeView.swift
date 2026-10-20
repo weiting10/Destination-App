@@ -41,7 +41,7 @@ struct WelcomeView: View {
 
             // Cute Continue button
             Button(action: onContinue) {
-                Label("Continue", systemImage: "heart.fill")
+                Text("Continue")
                     .font(.title3.bold())
                     .padding(.horizontal, 32)
                     .padding(.vertical, 14)
