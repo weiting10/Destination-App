@@ -11,8 +11,7 @@ struct DestinationsApp: App {
     let destinations = Destinations()
     let visitedStore = VisitedStore()
 
-    // Starts as true on every launch of the app, so the welcome screen
-    // shows each time the app is opened fresh (not when it returns from the background).
+    // the welcome screen shows each time the app is opened fresh
     @State private var showWelcome = true
 
     var body: some Scene {

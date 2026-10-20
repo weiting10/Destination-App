@@ -2,8 +2,7 @@
 //  WelcomeView.swift
 //  Destinations
 //
-// The welcome screen shown only on the first launch. It shows the app name,
-// a short mission statement, and a Continue button that moves on to the home screen.
+// The welcome screen shown only on the first launch.
 
 import SwiftUI
 
@@ -29,7 +28,7 @@ struct WelcomeView: View {
                 .font(.system(size: 60))
                 .foregroundStyle(Color("arrow_color"))
 
-            // Brief, slightly poetic mission statement
+            //  mission statement
             Text("Every journey leaves a little magic behind. Keep your footprints, your favorite photos, and your quiet notes close, so the places you've loved can always find their way back to you.")
                 .font(.system(size: 20, design: .serif))
                 .italic()
@@ -39,7 +38,7 @@ struct WelcomeView: View {
 
             Spacer()
 
-            // Cute Continue button
+            //  Continue button
             Button(action: onContinue) {
                 Text("Continue")
                     .font(.title3.bold())
