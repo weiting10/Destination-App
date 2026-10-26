@@ -8,6 +8,7 @@
 // This is the home screen and the starting point. “Places I’ve been” opens the visited list. “Get your next destination” picks a random destination and opens its page.
 
 import SwiftUI
+import SwiftData
 
 struct HomeView: View {
     @Environment(Destinations.self) private var destinations
@@ -65,5 +66,5 @@ struct HomeView: View {
 #Preview {
     HomeView()
         .environment(Destinations())
-        .environment(VisitedStore())
+        .modelContainer(for: VisitedPlace.self, inMemory: true)
 }

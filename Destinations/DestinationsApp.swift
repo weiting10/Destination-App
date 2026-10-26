@@ -5,11 +5,11 @@
 //  Created by Tan, Weiting on 10/19/26.
 //
 import SwiftUI
+import SwiftData
 
 @main
 struct DestinationsApp: App {
     let destinations = Destinations()
-    let visitedStore = VisitedStore()
 
     // the welcome screen shows each time the app is opened fresh
     @State private var showWelcome = true
@@ -27,10 +27,11 @@ struct DestinationsApp: App {
                 } else {
                     HomeView()
                         .environment(destinations)
-                        .environment(visitedStore)
                         .transition(.opacity)
                 }
             }
         }
+        // Creates the on-disk SwiftData store (PlacePhoto is included through the relationship).
+        .modelContainer(for: VisitedPlace.self)
     }
 }

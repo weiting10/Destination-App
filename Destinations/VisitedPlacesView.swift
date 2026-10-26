@@ -8,10 +8,13 @@
 
 
 import SwiftUI
+import SwiftData
 
 struct VisitedPlacesView: View {
 
-    @Environment(VisitedStore.self) private var store
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \VisitedPlace.dateAdded) private var places: [VisitedPlace]
+
     @State private var showingAddAlert = false
     @State private var newPlaceName = ""
 
@@ -22,7 +25,7 @@ struct VisitedPlacesView: View {
                 .font(.system(size: 28, weight: .bold))
                 .padding(.top, 8)
 
-            if store.places.isEmpty {
+            if places.isEmpty {
                 Spacer()
                 Text("No places yet.\nTap + to add your first one.")
                     .multilineTextAlignment(.center)
@@ -30,9 +33,9 @@ struct VisitedPlacesView: View {
                 Spacer()
             } else {
                 List {
-                    ForEach(store.places) { place in
+                    ForEach(places) { place in
                         NavigationLink {
-                            DiaryView(placeID: place.id)
+                            DiaryView(place: place)
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
@@ -43,13 +46,13 @@ struct VisitedPlacesView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
-                                Text("\(place.photoFilenames.count) photo(s)")
+                                Text("\(place.photos.count) photo(s)")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
                         }
                     }
-                    .onDelete { store.delete(at: $0) }
+                    .onDelete(perform: delete)
                 }
                 .scrollContentBackground(.hidden)
             }
@@ -69,12 +72,27 @@ struct VisitedPlacesView: View {
         }
         .alert("Add a place", isPresented: $showingAddAlert) {
             TextField("e.g. Kyoto", text: $newPlaceName)
-            Button("Add") { store.add(name: newPlaceName) }
+            Button("Add") { addPlace() }
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("Where have you been?")
         }
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func addPlace() {
+        let trimmed = newPlaceName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        modelContext.insert(VisitedPlace(name: trimmed))
+        try? modelContext.save()
+    }
+
+    // The cascade delete rule removes each place's photos as well.
+    private func delete(at offsets: IndexSet) {
+        for index in offsets {
+            modelContext.delete(places[index])
+        }
+        try? modelContext.save()
     }
 }
 
@@ -82,5 +100,5 @@ struct VisitedPlacesView: View {
     NavigationStack {
         VisitedPlacesView()
     }
-    .environment(VisitedStore())
+    .modelContainer(for: VisitedPlace.self, inMemory: true)
 }
