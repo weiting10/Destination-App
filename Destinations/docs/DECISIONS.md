@@ -15,3 +15,5 @@ Status: **Confirmed** = stated by the developer. **Assumed** = chosen by the ass
 | 2026-11-02 | `CORELOCATION.md` and `MAPKIT.md` copied into `docs/`; `CORELOCATION.md` gained section 12 and a caveat about the key; `MAPKIT.md` rewritten as a standalone note with a reverse-geocoding section. Confirmed. | Link instead of copy. | Prompt 12 requires the notes to stand alone. |
 
 Not created yet: `AGENTS.md`, `AGENDA.md`, `README.md` (this project had only `BUGLIST.md`).
+| 2026-11-02 | Observed: in the iOS 26.5 simulator, tapping `LocationButton` left authorization at 0 and `requestLocation()` failed with `kCLErrorDomain` 1. `CurrentPlaceFinder` now falls back to `requestWhenInUseAuthorization()` when the status is notDetermined and requests the fix after the authorization callback. The privacy key is now **required** for this path (developer has added it). Confirmed by the developer's console output. | Rely on `LocationButton` alone; replace it with a plain button. | Keeps the button (and its one-time authorization if it works on a device) but makes the shortcut work either way. |
+

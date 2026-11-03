@@ -219,6 +219,7 @@ struct PostScreen: View {
 - **Distance filter maths:** 1 degree of latitude is about 111 km, so 0.0001 degree is about 11 m. With a 10 m filter, change latitude by 0.0002 (about 22 m) to get an update and by 0.00003 (about 3 m) to confirm none arrives. The first fix after `start()` should arrive regardless.
 - **Reset the permission prompt:** quit the app, then `xcrun simctl privacy booted reset location` (append the bundle identifier to reset only your app). Or in the simulator: Settings, General, Transfer or Reset iPhone, Reset Location & Privacy; or Device menu, Erase All Content and Settings.
 - **Settings changes:** in the simulator's Settings app open your app's entry (or Privacy & Security, Location Services) and choose Never, Ask Next Time Or When I Share, or While Using the App. Precise Location has its own switch; the simulator may not honour it **[unverified]**.
+- **The simulator is not your real location.** With nothing set it reports a default simulated position in California (San Francisco was observed), and the presets (City Run, City Bike Ride, Freeway Drive, Apple) are California too. If the app "finds" a place you are not in, check the checkmark under Features, Location, and set Custom Location to the coordinates you want.
 - A location you set long before tapping Start may arrive with an old `timestamp`, in which case `isUsable` returns false **[unverified]**.
 
 ## 8. Hand test with breakpoints
@@ -367,7 +368,7 @@ LocationButton(.currentLocation) {
 .labelStyle(.titleAndIcon)
 ```
 
-**Flow.** Tap, system one-time dialog, button action runs, `CLLocationManager.requestLocation()` (one fix, then it stops by itself), the delegate gets `didUpdateLocations` once or `didFailWithError`, optional reverse geocoding to a place name (see MAPKIT.md), state updates, the screen reacts.
+**Flow.** Tap, button action runs; if the status is already when-in-use, `CLLocationManager.requestLocation()` (one fix, then it stops by itself); if the status is still notDetermined, fall back to `requestWhenInUseAuthorization()` and request the fix when the authorization callback reports success; the delegate gets `didUpdateLocations` once or `didFailWithError`, optional reverse geocoding to a place name (see MAPKIT.md), state updates, the screen reacts.
 
 **Reference class** (used in a travel-diary app to fill in a place name; `@Observable`, one-shot):
 
@@ -391,16 +392,31 @@ final class CurrentPlaceFinder: NSObject {
 
     private let manager = CLLocationManager()
 
+    /// True while we have asked the standard permission prompt and are waiting for the answer.
+    private var waitingForPermission = false
+
     override init() {
         super.init()
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters   // a place name does not need metre accuracy
         manager.delegate = self
     }
 
-    /// Call this from the LocationButton's action. The button has just granted one-time permission.
+    /// Call this from the LocationButton's action.
+    /// If the button granted one-time permission, the status is already "when in use" and we just ask for a fix.
+    /// If it did not (observed in the iOS 26.5 simulator: status stayed 0), fall back to the standard prompt,
+    /// which needs NSLocationWhenInUseUsageDescription in the target's Info.
     func findCurrentPlace() {
         state = .locating
-        manager.requestLocation()   // one fix, then Core Location stops by itself
+
+        switch manager.authorizationStatus {   // 0 notDetermined, 2 denied, 4 whenInUse
+        case .notDetermined:
+            waitingForPermission = true
+            manager.requestWhenInUseAuthorization()   // the answer arrives in locationManagerDidChangeAuthorization
+        case .denied, .restricted:
+            state = .failed("Location is turned off for this app. Allow it in Settings, or type the place.")
+        default:
+            manager.requestLocation()   // one fix, then Core Location stops by itself
+        }
     }
 
     private func lookUpName(for location: CLLocation) async {
@@ -439,8 +455,26 @@ extension CurrentPlaceFinder: CLLocationManagerDelegate {
         }
     }
 
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        // Also called once when the manager is set up; only act if we are waiting for the prompt's answer.
+        guard waitingForPermission else { return }
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            waitingForPermission = false
+            manager.requestLocation()
+        case .denied, .restricted:
+            waitingForPermission = false
+            state = .failed("Location wasn't allowed. Please type the place instead.")
+        default:
+            break   // still notDetermined
+        }
+    }
+
     func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
-        print("Error getting location: " + error.localizedDescription)
+        let code = (error as NSError).code
+        let status = manager.authorizationStatus.rawValue
+        print("Error getting location: code \(code), authorization status \(status), \(error.localizedDescription)")
+
         if let clError = error as? CLError, clError.code == .denied {
             state = .failed("Location wasn't allowed. Please type the place instead.")
         } else {
@@ -458,13 +492,15 @@ Owned by the screen with `@State private var finder = CurrentPlaceFinder()` (iOS
 - `desiredAccuracy = kCLLocationAccuracyHundredMeters`: a city name does not need metre accuracy, and less accuracy is faster and cheaper.
 - The delegate methods are called directly on the main actor (manager created on main), so there are no `DispatchQueue.main.async` hops; the reverse-geocoding lookup runs in a `Task`.
 - Reverse geocoding uses MapKit's `MKReverseGeocodingRequest`, because `CLGeocoder` is deprecated in iOS 26 (MAPKIT.md).
+- **Fallback to the standard prompt.** In the iOS 26.5 simulator, with the privacy key present, tapping `LocationButton` left the status at 0 (notDetermined) and `requestLocation()` failed with `kCLErrorDomain` error 1 (denied) **(observed by the developer; not tested on a device)**. So the class does not rely on the button alone: when the status is notDetermined it calls `requestWhenInUseAuthorization()` itself and requests the fix once the authorization callback reports success. This path **needs** the privacy key (section 2).
 - `requestLocation()` allows one request at a time; calling it again cancels the previous one, so double taps are safe.
 
 **Project facts seen in the app this was written for:** iOS 26.5 deployment target, default actor isolation MainActor, approachable concurrency on, member import visibility on, Swift 5 language mode, Xcode file-system synchronized folders (a new `.swift` file placed in the app folder joins the target automatically). Settings are not changed to make code compile.
 
 **Pitfalls specific to this variation**
 - **An alert cannot hold the button.** Alert actions are meant for plain buttons and text fields, so put the `LocationButton` in a **sheet** or in the normal view hierarchy **[unverified that an alert rejects it; a sheet is known to work with ordinary views]**.
-- **The tap grants permission, not coordinates.** If the action does nothing, nothing happens.
+- **The tap grants permission, not coordinates, and may grant nothing.** Log `manager.authorizationStatus` when the action runs. Calling `requestLocation()` while the status is notDetermined failed with a denied error (code 1) in the simulator.
+- **Error code 1 does not always mean the user said no.** It was returned with the status still at 0. Always log the status next to the error.
 - **Reverse geocoding needs a network** and can return nothing; always leave the user a way to type the value.
 - **Do not store or log the coordinates if you only needed a name**; say so on screen (the app above does).
 - Test with a simulated location (section 7); with "None" the fix fails.
@@ -473,7 +509,7 @@ Owned by the screen with `@State private var finder = CurrentPlaceFinder()` (iOS
 
 | Case | Expected |
 |------|----------|
-| Custom location set, first tap | System one-time dialog appears; allow. `findCurrentPlace` hits (`po self.state` shows `locating`). `didUpdateLocations` hits with `po locations.count` 1 and `p location.horizontalAccuracy` a small positive number. After the geocoder, `po mapItems.first?.addressRepresentations?.cityWithContext` shows a name such as "Cupertino, CA" and the name field fills in. |
+| Custom location set, first tap | A system permission dialog appears (the standard prompt, showing your privacy-key text, if the button did not grant by itself); allow. `findCurrentPlace` hits (`po self.state` shows `locating`). `didUpdateLocations` hits with `po locations.count` 1 and `p location.horizontalAccuracy` a small positive number. After the geocoder, `po mapItems.first?.addressRepresentations?.cityWithContext` shows a name such as "Cupertino, CA" and the name field fills in. |
 | Tap again | No second dialog (per Apple's docs); same result. |
 | Don't allow / dismiss the dialog | `didFailWithError` hits with `p (error as NSError).code` equal to 1; red message "Location wasn't allowed". Typing still works. |
 | Simulator location None | Failure message ("Couldn't find your location"); `didFailWithError` code 0 is likely **[unverified]**. |
