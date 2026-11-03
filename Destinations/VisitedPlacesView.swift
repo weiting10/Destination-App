@@ -4,7 +4,7 @@
 //
 //  Created by Tan, Weiting on 10/14/26.
 //
-//This file lists the places you’ve been, each with its visit date and photo count. The + button adds a place, and swiping a row deletes it.
+//This file lists the places you’ve been, each with its visit date and photo count. The + button opens a sheet to add a place (typed, or filled in from your current location), and swiping a row deletes it.
 
 
 import SwiftUI
@@ -15,8 +15,7 @@ struct VisitedPlacesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \VisitedPlace.dateAdded) private var places: [VisitedPlace]
 
-    @State private var showingAddAlert = false
-    @State private var newPlaceName = ""
+    @State private var showingAddSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -63,25 +62,23 @@ struct VisitedPlacesView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    newPlaceName = ""
-                    showingAddAlert = true
+                    showingAddSheet = true
                 } label: {
                     Image(systemName: "plus")
                 }
             }
         }
-        .alert("Add a place", isPresented: $showingAddAlert) {
-            TextField("e.g. Kyoto", text: $newPlaceName)
-            Button("Add") { addPlace() }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("Where have you been?")
+        .sheet(isPresented: $showingAddSheet) {
+            AddPlaceSheet { name in
+                addPlace(named: name)
+            }
+            .presentationDetents([.medium])
         }
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func addPlace() {
-        let trimmed = newPlaceName.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func addPlace(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         modelContext.insert(VisitedPlace(name: trimmed))
         try? modelContext.save()
