@@ -11,16 +11,17 @@ import SwiftData
 struct DestinationsApp: App {
     let destinations = Destinations()
 
-    // the welcome screen shows each time the app is opened fresh
-    @State private var showWelcome = true
+    // The welcome screen shows only the first time the app is used. Tapping Continue stores
+    // this flag on the device (UserDefaults), so later launches go straight to the home screen.
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if showWelcome {
+                if !hasSeenWelcome {
                     WelcomeView {
                         withAnimation(.easeInOut(duration: 0.5)) {
-                            showWelcome = false
+                            hasSeenWelcome = true
                         }
                     }
                     .transition(.opacity)
