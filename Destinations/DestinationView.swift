@@ -1,4 +1,4 @@
-//  DestinationsApp.swift
+//  DestinationView.swift
 //  Destinations
 //
 //  Created by Tan, Weiting on 10/14/26.
@@ -12,6 +12,9 @@ struct DestinationView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var rotation = 360.0
+
+    /// Settings → "Animate destination photo". Off = the photo stays still.
+    @AppStorage(SettingsKey.animateDestinationPhoto) private var animatePhoto = true
 
     private var animation: Animation {
         .easeInOut(duration: 1.0)
@@ -31,9 +34,9 @@ struct DestinationView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 220)
                 .clipped()
-                .rotation3DEffect(.degrees(rotation), axis: (x: 0.0, y: 1.0, z: 0.0))
-                .animation(animation, value: rotation)   // animates only this image
-                .onAppear { rotation = 0 }               // no withAnimation
+                .rotation3DEffect(.degrees(animatePhoto ? rotation : 0), axis: (x: 0.0, y: 1.0, z: 0.0))
+                .animation(animatePhoto ? animation : nil, value: rotation)   // animates only this image
+                .onAppear { if animatePhoto { rotation = 0 } }               // no withAnimation
 
             Spacer()
 
@@ -52,10 +55,9 @@ struct DestinationView: View {
                 Button {
                     dismiss()
                 } label: {
-                    Label("Back", systemImage: "chevron.left")
+                    Label("Back", systemImage: "chevron.backward")
                         .font(.system(size: 20, weight: .semibold))
                 }
-                .tint(Color("arrow_color"))
                 Spacer()
             }
             .padding(.horizontal, 20)

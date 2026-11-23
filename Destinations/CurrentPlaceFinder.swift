@@ -7,6 +7,7 @@
 //  2. findCurrentPlace() asks Core Location for a single fix (requestLocation).
 //  3. The fix is turned into a readable place name with MapKit's reverse geocoder.
 //  Nothing is stored here and nothing keeps running: one tap, one lookup.
+//  Messages are localized (Localizable.xcstrings).
 //
 
 import Foundation
@@ -51,7 +52,7 @@ final class CurrentPlaceFinder: NSObject {
             waitingForPermission = true
             manager.requestWhenInUseAuthorization()   // the answer arrives in locationManagerDidChangeAuthorization
         case .denied, .restricted:
-            state = .failed("Location is turned off for this app. Allow it in Settings, or type the place.")
+            state = .failed(String(localized: "Location is turned off for this app. Allow it in Settings, or type the place."))
         default:
             manager.requestLocation()   // one fix, then Core Location stops by itself
         }
@@ -60,23 +61,23 @@ final class CurrentPlaceFinder: NSObject {
     private func lookUpName(for location: CLLocation) async {
         // CLGeocoder is deprecated in iOS 26; MKReverseGeocodingRequest is its replacement.
         guard let request = MKReverseGeocodingRequest(location: location) else {
-            state = .failed("Couldn't work out the place name. Please type it instead.")
+            state = .failed(String(localized: "Couldn't work out the place name. Please type it instead."))
             return
         }
         do {
             let mapItems = try await request.mapItems
             guard let item = mapItems.first else {
-                state = .failed("No place name found here. Please type it instead.")
+                state = .failed(String(localized: "No place name found here. Please type it instead."))
                 return
             }
             // cityWithContext is e.g. "Cupertino, CA"; fall back to a short address if there is no city.
             if let name = item.addressRepresentations?.cityWithContext ?? item.address?.shortAddress {
                 state = .found(name)
             } else {
-                state = .failed("No place name found here. Please type it instead.")
+                state = .failed(String(localized: "No place name found here. Please type it instead."))
             }
         } catch {
-            state = .failed("Couldn't look up the place name (are you online?). Please type it instead.")
+            state = .failed(String(localized: "Couldn't look up the place name (are you online?). Please type it instead."))
         }
     }
 }
@@ -85,7 +86,7 @@ extension CurrentPlaceFinder: CLLocationManagerDelegate {
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last, location.horizontalAccuracy >= 0 else {
-            state = .failed("Couldn't get a usable location. Please try again.")
+            state = .failed(String(localized: "Couldn't get a usable location. Please try again."))
             return
         }
         Task {
@@ -105,7 +106,7 @@ extension CurrentPlaceFinder: CLLocationManagerDelegate {
             manager.requestLocation()
         case .denied, .restricted:
             waitingForPermission = false
-            state = .failed("Location wasn't allowed. Please type the place instead.")
+            state = .failed(String(localized: "Location wasn't allowed. Please type the place instead."))
         default:
             break   // still notDetermined
         }
@@ -118,9 +119,9 @@ extension CurrentPlaceFinder: CLLocationManagerDelegate {
 
         var message: String
         if let clError = error as? CLError, clError.code == .denied {
-            message = "Location wasn't allowed. Please type the place instead."
+            message = String(localized: "Location wasn't allowed. Please type the place instead.")
         } else {
-            message = "Couldn't find your location. Please try again or type the place."
+            message = String(localized: "Couldn't find your location. Please try again or type the place.")
         }
         #if DEBUG
         message += " [debug: code \(code), status \(status)]"   // temporary: remove once the cause is found

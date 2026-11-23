@@ -5,6 +5,7 @@
 //  Created by Tan, Weiting on 10/14/26.
 //
 // This is the diary page for one place. It has the date picker, the notes box, and the photo grid, and “Add photos” opens the photo picker. Tapping a photo opens the viewer.
+// “Send a postcard” turns one of this place's photos into a postcard (needs at least one photo).
 
 import SwiftUI
 import SwiftData
@@ -19,6 +20,7 @@ struct DiaryView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var selectedPhoto: PlacePhoto?
+    @State private var showingComposer = false
 
     private let columns = [GridItem(.adaptive(minimum: 100), spacing: 4)]
 
@@ -99,11 +101,12 @@ struct DiaryView: View {
                         }
                     }
                 }
+
+                postcardSection
             }
             .padding()
         }
         .background(Color("background_color").ignoresSafeArea())
-        .tint(Color("arrow_color"))
         .onChange(of: pickerItems) { _, items in
             Task {
                 for item in items {
@@ -116,6 +119,11 @@ struct DiaryView: View {
                 save()
                 pickerItems = []
             }
+        }
+        .sheet(isPresented: $showingComposer) {
+            PostcardComposerView(place: place)
+                .modelContext(modelContext)
+                .accentTint()
         }
         .fullScreenCover(item: $selectedPhoto) { photo in
             PhotoViewerView(image: UIImage(data: photo.imageData) ?? UIImage()) {
@@ -132,6 +140,29 @@ struct DiaryView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    /// "Send a postcard" (kept separate so the main body stays simple for the compiler).
+    @ViewBuilder
+    private var postcardSection: some View {
+        Button {
+            showingComposer = true
+        } label: {
+            Label("Send a postcard", systemImage: "envelope.fill")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(place.photos.isEmpty)
+        .padding(.top, 8)
+
+        if place.photos.isEmpty {
+            Text("Add a photo to send a postcard.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+        }
+    }
+
     /// Write pending changes to disk right away instead of waiting for SwiftData's autosave.
     private func save() {
         do {
@@ -144,7 +175,7 @@ struct DiaryView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: VisitedPlace.self,
+        for: VisitedPlace.self, Postcard.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let place = VisitedPlace(name: "Kyoto")

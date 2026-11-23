@@ -11,28 +11,17 @@ import SwiftData
 struct DestinationsApp: App {
     let destinations = Destinations()
 
-    // The welcome screen shows only the first time the app is used. Tapping Continue stores
-    // this flag on the device (UserDefaults), so later launches go straight to the home screen.
-    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    /// App lock state (PIN in the Keychain, on/off flag in UserDefaults).
+    @State private var appLock = AppLock()
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                if !hasSeenWelcome {
-                    WelcomeView {
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            hasSeenWelcome = true
-                        }
-                    }
-                    .transition(.opacity)
-                } else {
-                    HomeView()
-                        .environment(destinations)
-                        .transition(.opacity)
-                }
-            }
+            // RootView runs the splash, then Welcome (first run) or Home, and applies the theme and the lock.
+            RootView()
+                .environment(destinations)
+                .environment(appLock)
         }
         // Creates the on-disk SwiftData store (PlacePhoto is included through the relationship).
-        .modelContainer(for: VisitedPlace.self)
+        .modelContainer(for: [VisitedPlace.self, Postcard.self])
     }
 }

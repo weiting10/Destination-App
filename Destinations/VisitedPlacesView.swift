@@ -45,7 +45,7 @@ struct VisitedPlacesView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
-                                Text("\(place.photos.count) photo(s)")
+                                Text("\(place.photos.count) photos")   // plural forms in Localizable.xcstrings
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -58,7 +58,6 @@ struct VisitedPlacesView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("background_color").ignoresSafeArea())
-        .tint(Color("arrow_color"))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

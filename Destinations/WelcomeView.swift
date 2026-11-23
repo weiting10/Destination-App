@@ -21,12 +21,13 @@ struct WelcomeView: View {
             Text("My Little Travel Journal")
                 .font(.system(size: 38, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color("arrow_color"))
+                .foregroundStyle(.tint)
                 .padding(.horizontal, 30)
 
             Image(systemName: "airplane.departure")
                 .font(.system(size: 60))
-                .foregroundStyle(Color("arrow_color"))
+                .foregroundStyle(.tint)
+                .flipsForRightToLeftLayoutDirection(true)
 
             //  mission statement
             Text("Every journey leaves a little magic behind. Keep your footprints, your favorite photos, and your quiet notes close, so the places you've loved can always find their way back to you.")
@@ -44,7 +45,7 @@ struct WelcomeView: View {
                     .font(.title3.bold())
                     .padding(.horizontal, 32)
                     .padding(.vertical, 14)
-                    .background(Color("arrow_color"), in: Capsule())
+                    .background(.tint, in: Capsule())
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
             }

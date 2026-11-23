@@ -70,7 +70,7 @@ struct AddPlaceSheet: View {
                 }
             }
         }
-        .tint(Color("arrow_color"))
+        .accentTint()   // sheets get the user-selected accent color explicitly
     }
 
     @ViewBuilder
