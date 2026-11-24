@@ -28,7 +28,7 @@ struct LockView: View {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 40))
                     .foregroundStyle(.tint)
-                Text("My Little Travel Journal")
+                Text("My Little Journey")
                     .font(.system(.headline, design: .rounded))
                     .foregroundStyle(.secondary)
             }
@@ -83,7 +83,7 @@ struct PrivacyCoverView: View {
             Image(systemName: "airplane.departure")
                 .font(.system(size: 60))
                 .foregroundStyle(.tint)
-            Text("My Little Travel Journal")
+            Text("My Little Journey")
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
         }

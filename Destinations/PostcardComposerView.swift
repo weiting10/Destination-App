@@ -4,7 +4,8 @@
 //
 //  "Send a postcard" from a diary page: pick one of the place's photos, write the
 //  address, your name and a message, and watch the card update as you type.
-//  Send saves it to My Postcards (where it can be shared or exported as a PNG).
+//  Send saves it to My Postcards, then opens the share sheet with the finished postcard
+//  (front and back as one PNG). When the share sheet closes, the card flies away.
 //
 
 import SwiftUI
@@ -16,6 +17,9 @@ struct PostcardComposerView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
+    @Environment(\.layoutDirection) private var layoutDirection
+    @AppStorage(SettingsKey.accentColorHex) private var accentHex = ""
 
     @State private var selectedPhotoID: PersistentIdentifier?
     @State private var address = ""
@@ -23,6 +27,7 @@ struct PostcardComposerView: View {
     @State private var message: String
     @State private var showsBack = false
     @State private var sending = false
+    @State private var flownAway = false
 
     init(place: VisitedPlace) {
         self.place = place
@@ -60,9 +65,9 @@ struct PostcardComposerView: View {
                         .onTapGesture {
                             withAnimation(.spring(duration: 0.6)) { showsBack.toggle() }
                         }
-                        .offset(y: sending ? -700 : 0)
-                        .rotationEffect(.degrees(sending ? -12 : 0))
-                        .opacity(sending ? 0 : 1)
+                        .offset(y: flownAway ? -700 : 0)
+                        .rotationEffect(.degrees(flownAway ? -12 : 0))
+                        .opacity(flownAway ? 0 : 1)
 
                     Picker("Side", selection: Binding(
                         get: { showsBack },
@@ -170,11 +175,65 @@ struct PostcardComposerView: View {
             print("Could not save the postcard: \(error)")
         }
 
-        // The card flies away, then the sheet closes.
-        withAnimation(.easeIn(duration: 0.55)) { sending = true }
+        sending = true    // disables Send so it can't be tapped twice
+
+        // Render the postcard to a PNG and open the share sheet.
+        // Whether the user shares or cancels, the postcard is already saved in My Postcards.
+        if let url = PostcardExporter.pngFile(for: postcard.content,
+                                              tint: Theme.accent(fromHex: accentHex),
+                                              locale: locale,
+                                              layoutDirection: layoutDirection) {
+            ShareSheet.present(items: [url]) {
+                flyAwayAndClose()
+            }
+        } else {
+            flyAwayAndClose()
+        }
+    }
+
+    /// The card flies off the screen, then the sheet closes.
+    private func flyAwayAndClose() {
+        withAnimation(.easeIn(duration: 0.55)) { flownAway = true }
         Task {
             try? await Task.sleep(for: .milliseconds(600))
             dismiss()
         }
+    }
+}
+
+// MARK: - Share sheet
+
+/// Opens the system share sheet (UIActivityViewController) on top of whatever is showing.
+/// SwiftUI's ShareLink only opens when the user taps it, so this is used to open it
+/// right after Send. `onFinish` runs once the share sheet closes (shared or cancelled).
+@MainActor
+enum ShareSheet {
+
+    static func present(items: [Any], onFinish: @escaping () -> Void) {
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        guard let root = scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+            onFinish()
+            return
+        }
+
+        // Present from the top-most screen (here: the composer sheet).
+        var top = root
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, _, _, _ in
+            DispatchQueue.main.async { onFinish() }
+        }
+        // iPad shows the share sheet as a popover, which needs an anchor.
+        if let popover = controller.popoverPresentationController {
+            popover.sourceView = top.view
+            popover.sourceRect = CGRect(x: top.view.bounds.midX, y: top.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        top.present(controller, animated: true)
     }
 }

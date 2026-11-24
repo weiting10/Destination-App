@@ -43,7 +43,7 @@ struct SplashView: View {
                     .scaleEffect(iconScale)
                     .accessibilityHidden(true)
 
-                Text("My Little Travel Journal")
+                Text("My Little Journey")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.tint)
                     .multilineTextAlignment(.center)

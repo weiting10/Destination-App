@@ -36,7 +36,7 @@ struct InfoView: View {
                     .accessibilityHidden(true)
 
                 VStack(spacing: 4) {
-                    Text("My Little Travel Journal")
+                    Text("My Little Journey")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .multilineTextAlignment(.center)
                     Text("Version \(version) (\(build))")

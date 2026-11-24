@@ -18,7 +18,7 @@ struct WelcomeView: View {
             Spacer()
 
             // App name at the top
-            Text("My Little Travel Journal")
+            Text("My Little Journey")
                 .font(.system(size: 38, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tint)

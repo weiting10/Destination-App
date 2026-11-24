@@ -1,0 +1,24 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Cpy-Lb-L02.text": {
+      "comment": "Class = \"UILabel\"; text = \"© 2026 Weiting Tan. All rights reserved.\"; ObjectID = \"Cpy-Lb-L02\";",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "© 2026 Weiting Tan. All rights reserved."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© ٢٠٢٦ ويتينغ تان. جميع الحقوق محفوظة."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

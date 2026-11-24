@@ -229,7 +229,7 @@ struct PostcardExportView: View {
                 .shadow(color: .black.opacity(0.2), radius: 14, y: 8)
             PostcardBackView(content: content)
                 .shadow(color: .black.opacity(0.2), radius: 14, y: 8)
-            Label("My Little Travel Journal", systemImage: "airplane.departure")
+            Label("My Little Journey", systemImage: "airplane.departure")
                 .font(.system(size: 22, weight: .semibold, design: .rounded))
                 .foregroundStyle(.tint)
         }
