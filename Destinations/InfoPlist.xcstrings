@@ -2,7 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "CFBundleDisplayName" : {
-      "extractionState" : "stale",
+      "comment" : "Bundle display name",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

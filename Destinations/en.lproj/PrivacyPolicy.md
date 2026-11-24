@@ -1,9 +1,9 @@
 # Privacy Policy
 
-**My Little Travel Journal**
+**My Little Journey**
 Last updated: November 23, 2026
 
-My Little Travel Journal is a personal travel diary. It is built to keep what you write on your own device. This policy explains what the app stores, what it uses, and what it never does.
+My Little Journey is a personal travel diary. It is built to keep what you write on your own device. This policy explains what the app stores, what it uses, and what it never does.
 
 ## What the app stores
 
